@@ -1,0 +1,9 @@
+ragas>=0.1.0
+datasets
+langchain>=0.0.267
+langchain-openai
+openai>=1.0.0
+pandas
+numpy
+matplotlib
+python-dotenv
