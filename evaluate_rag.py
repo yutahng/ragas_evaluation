@@ -10,7 +10,7 @@ import json
 import pandas as pd
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 from datasets import Dataset
 
 # RAGASのインポート
@@ -52,15 +52,31 @@ except ImportError:
 
 from langchain_openai import ChatOpenAI as LangchainOpenAI
 
+# Google AI (Gemini) のインポート
+try:
+    import google.generativeai as genai
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    GEMINI_AVAILABLE = True
+except ImportError:
+    print("警告: Google Generative AI (Gemini) ライブラリがインストールされていません。")
+    print("Geminiモデルを使用するには、以下のコマンドを実行してください:")
+    print("pip install google-generativeai langchain-google-genai")
+    GEMINI_AVAILABLE = False
+
 # 環境変数の読み込み
 load_dotenv()
+
+# Google AI APIキーの設定（存在する場合）
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if GOOGLE_API_KEY and GEMINI_AVAILABLE:
+    genai.configure(api_key=GOOGLE_API_KEY)
 
 def load_data(file_path: str) -> Dataset:
     """
     評価用データセットを読み込む関数
     
     Args:
-        file_path: データセットのファイルパス（JSONLまたはCSV）
+        file_path: データセットのファイルパス（JSON、JSONLまたはCSV）
         
     Returns:
         Dataset: Hugging Face Datasetsフォーマットのデータセット
@@ -70,6 +86,22 @@ def load_data(file_path: str) -> Dataset:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = [json.loads(line) for line in f]
         return Dataset.from_list(data)
+    
+    elif file_path.endswith('.json'):
+        # JSONファイルの読み込み（JSONL形式として処理）
+        try:
+            # まずJSONL形式として読み込みを試みる
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = [json.loads(line) for line in f]
+            return Dataset.from_list(data)
+        except json.JSONDecodeError:
+            # 通常のJSONとして読み込みを試みる
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            # データが辞書の場合はリストに変換
+            if isinstance(data, dict):
+                data = [data]
+            return Dataset.from_list(data)
     
     elif file_path.endswith('.csv'):
         # CSVファイルの読み込み
@@ -172,13 +204,20 @@ def get_available_metrics() -> Dict[str, Any]:
     
     return available_metrics
 
-def run_evaluation(dataset: Dataset, use_ground_truth: bool = False) -> Dict[str, Any]:
+def run_evaluation(
+    dataset: Dataset, 
+    use_ground_truth: bool = False, 
+    llm_type: Literal["openai", "gemini"] = "openai",
+    model_name: Optional[str] = None
+) -> Dict[str, Any]:
     """
     RAGASを使用して評価を実行する関数
     
     Args:
         dataset: 評価用データセット
         use_ground_truth: ground_truthを使用するかどうか
+        llm_type: 使用するLLMの種類 ("openai" または "gemini")
+        model_name: 使用するモデル名（指定しない場合はデフォルト値を使用）
         
     Returns:
         Dict: 評価結果
@@ -233,9 +272,33 @@ def run_evaluation(dataset: Dataset, use_ground_truth: bool = False) -> Dict[str
         if SummarizationScore is not None:
             metrics.append(SummarizationScore())
     
-    # OpenAIのAPIキーが設定されているか確認
-    if not os.getenv("OPENAI_API_KEY"):
-        raise ValueError("OPENAI_API_KEYが設定されていません。.envファイルを確認してください。")
+    # LLMの設定
+    if llm_type == "openai":
+        # OpenAIのAPIキーが設定されているか確認
+        if not os.getenv("OPENAI_API_KEY"):
+            raise ValueError("OPENAI_API_KEYが設定されていません。.envファイルを確認してください。")
+        
+        # モデル名の設定（デフォルトはgpt-4o）
+        openai_model = model_name or "gpt-4o"
+        print(f"OpenAIモデルを使用します: {openai_model}")
+        llm = LangchainOpenAI(model=openai_model, temperature=0)
+    
+    elif llm_type == "gemini":
+        # Geminiが利用可能か確認
+        if not GEMINI_AVAILABLE:
+            raise ValueError("Geminiモデルを使用するには、Google Generative AIライブラリをインストールしてください。")
+        
+        # Google AIのAPIキーが設定されているか確認
+        if not GOOGLE_API_KEY:
+            raise ValueError("GOOGLE_API_KEYが設定されていません。.envファイルを確認してください。")
+        
+        # モデル名の設定（デフォルトはgemini-pro）
+        gemini_model = model_name or "gemini-pro"
+        print(f"Geminiモデルを使用します: {gemini_model}")
+        llm = ChatGoogleGenerativeAI(model=gemini_model, temperature=0)
+    
+    else:
+        raise ValueError(f"サポートされていないLLMタイプです: {llm_type}")
     
     print(f"使用する評価指標: {[type(m).__name__ for m in metrics]}")
     print(f"評価するサンプル数: {len(dataset)}")
@@ -248,7 +311,7 @@ def run_evaluation(dataset: Dataset, use_ground_truth: bool = False) -> Dict[str
             result = evaluate(
                 dataset=dataset,
                 metrics=metrics,
-                llm=LangchainOpenAI(model="gpt-4o", temperature=0),
+                llm=llm,
                 raise_exceptions=True
             )
             print(f"評価が完了しました。結果の型: {type(result)}")
@@ -421,13 +484,17 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='RAGASを使用してRAGシステムを評価するスクリプト')
-    parser.add_argument('--data', type=str, required=True, help='評価用データセットのパス（JSONLまたはCSV）')
+    parser.add_argument('--data', type=str, required=True, help='評価用データセットのパス（JSON、JSONLまたはCSV）')
     parser.add_argument('--question_key', type=str, default='question', help='質問が格納されているカラム名')
     parser.add_argument('--answer_key', type=str, default='answer', help='回答が格納されているカラム名')
     parser.add_argument('--contexts_key', type=str, default='contexts', help='コンテキストが格納されているカラム名')
     parser.add_argument('--reference_key', type=str, default='reference', help='参照テキストが格納されているカラム名')
     parser.add_argument('--ground_truth_key', type=str, default=None, help='正解が格納されているカラム名（オプション）')
     parser.add_argument('--output_dir', type=str, default='results', help='結果を保存するディレクトリ')
+    parser.add_argument('--llm', type=str, choices=['openai', 'gemini'], default='openai', 
+                        help='使用するLLMの種類（openai または gemini）')
+    parser.add_argument('--model', type=str, default=None, 
+                        help='使用するモデル名（指定しない場合はデフォルト値を使用。openaiの場合はgpt-4o、geminiの場合はgemini-pro）')
     
     args = parser.parse_args()
     
@@ -449,7 +516,21 @@ def main():
     # 評価の実行
     print("評価を実行しています...")
     use_ground_truth = args.ground_truth_key is not None
-    result = run_evaluation(eval_dataset, use_ground_truth=use_ground_truth)
+    
+    # Geminiが選択されたが利用できない場合の処理
+    if args.llm == 'gemini' and not GEMINI_AVAILABLE:
+        print("警告: Geminiが選択されましたが、必要なライブラリがインストールされていません。")
+        print("OpenAIにフォールバックします。")
+        llm_type = 'openai'
+    else:
+        llm_type = args.llm
+    
+    result = run_evaluation(
+        eval_dataset, 
+        use_ground_truth=use_ground_truth,
+        llm_type=llm_type,
+        model_name=args.model
+    )
     
     # 結果の保存（データセットも渡す）
     save_results(result, output_dir=args.output_dir, dataset=eval_dataset)

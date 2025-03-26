@@ -7,3 +7,5 @@ pandas
 numpy
 matplotlib
 python-dotenv
+google-generativeai>=0.8.0
+langchain-google-genai>=2.0.0
