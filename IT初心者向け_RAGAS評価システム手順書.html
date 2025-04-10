@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT初心者向け RAGAS評価システム手順書</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Meiryo UI', 'Yu Gothic UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        h1 {
+            color: #1a73e8;
+            border-bottom: 2px solid #1a73e8;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        h2 {
+            color: #1a73e8;
+            margin-top: 30px;
+            border-left: 5px solid #1a73e8;
+            padding-left: 10px;
+        }
+        h3 {
+            color: #1a73e8;
+            margin-top: 25px;
+        }
+        a {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background-color: #f1f3f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        pre {
+            background-color: #f1f3f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            border-left: 3px solid #1a73e8;
+        }
+        .note {
+            background-color: #e8f0fe;
+            border-left: 4px solid #1a73e8;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .warning {
+            background-color: #fef7e0;
+            border-left: 4px solid #fbbc04;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .error {
+            background-color: #fce8e6;
+            border-left: 4px solid #ea4335;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .step {
+            background-color: #fff;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .step-number {
+            display: inline-block;
+            background-color: #1a73e8;
+            color: white;
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .command {
+            background-color: #202124;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        .command::before {
+            content: "$ ";
+            color: #8ab4f8;
+        }
+        .file-content {
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #dadce0;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f3f4;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .toc {
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 20px 0;
+        }
+        .toc ul {
+            padding-left: 20px;
+        }
+        .toc li {
+            margin: 5px 0;
+        }
+        .image-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .image-container img {
+            max-width: 100%;
+            border: 1px solid #dadce0;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .caption {
+            font-style: italic;
+            color: #5f6368;
+            margin-top: 5px;
+        }
+        .highlight {
+            background-color: #e8f0fe;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #1a73e8;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>IT初心者向け RAGAS評価システム手順書</h1>
+    
+    <p>このドキュメントは、Google Cloud Consoleを使用してRAG（Retrieval Augmented Generation）システムを評価するための手順を説明します。</p>
+    
+    <div class="toc">
+        <h2>目次</h2>
+        <ul>
+            <li><a href="#prerequisites">前提条件</a></li>
+            <li><a href="#gcp-setup">Google Cloud Consoleの設定</a></li>
+            <li><a href="#api-keys">APIキーの取得</a></li>
+            <li><a href="#project-setup">プロジェクトのセットアップ</a></li>
+            <li><a href="#file-upload">ファイルのアップロード</a></li>
+            <li><a href="#script-execution">評価スクリプトの実行</a></li>
+            <li><a href="#results">結果の確認</a></li>
+            <li><a href="#troubleshooting">トラブルシューティング</a></li>
+        </ul>
+    </div>
+    
+    <h2 id="prerequisites">前提条件</h2>
+    
+    <ul>
+        <li>Googleアカウント</li>
+        <li>インターネット接続</li>
+        <li>基本的なコマンドラインの知識（コピー＆ペーストができれば大丈夫です）</li>
+        <li>ファイルサーバへのアクセス権限</li>
+    </ul>
+    
+    <h2 id="gcp-setup">Google Cloud Consoleの設定</h2>
+    
+    <div class="step">
+        <p><span class="step-number">1</span> <strong>Google Cloud Consoleにアクセス</strong></p>
+        <ul>
+            <li>ブラウザで <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> を開きます。</li>
+            <li>Googleアカウントでログインします。</li>
+        </ul>
+        <div class="image-container">
+            <img src="https://storage.googleapis.com/gweb-cloudblog-publish/images/Google_Cloud_Console.max-1000x1000.jpg" alt="Google Cloud Consoleのログイン画面">
+            <p class="caption">Google Cloud Consoleのログイン画面</p>
+        </div>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">2</span> <strong>新しいプロジェクトの作成</strong></p>
+        <ul>
+            <li>画面上部のプロジェクト選択ドロップダウンをクリックします。</li>
+            <li>「新しいプロジェクト」をクリックします。</li>
+            <li>プロジェクト名を入力します（例：「rag-evaluation」）。</li>
+            <li>「作成」ボタンをクリックします。</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">3</span> <strong>Cloud Shellの起動</strong></p>
+        <ul>
+            <li>画面右上の「Cloud Shell」アイコン（>_）をクリックします。</li>
+            <li>Cloud Shellが画面下部に表示されるまで待ちます。</li>
+        </ul>
+    </div>
+    
+    <h2 id="api-keys">APIキーの取得</h2>
+    
+    <h3>Google AI (Gemini) APIキーの取得</h3>
+    
+    <div class="note">
+        <p><strong>注意:</strong> このシステムではGemini APIを使用します。OpenAI APIは使用しません。</p>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">1</span> <strong>Generative Language APIの有効化</strong></p>
+        <ul>
+            <li>Google Cloud Consoleで、左側のメニューから「APIとサービス」→「ライブラリ」を選択します。</li>
+            <li>検索ボックスに「Generative Language API」と入力し、検索結果をクリックします。</li>
+            <li>「有効にする」ボタンをクリックします。</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">2</span> <strong>APIキーの作成</strong></p>
+        <ul>
+            <li>左側のメニューから「APIとサービス」→「認証情報」を選択します。</li>
+            <li>「認証情報を作成」→「APIキー」をクリックします。</li>
+            <li>作成されたAPIキーをコピーして安全な場所に保存します。</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">3</span> <strong>APIキーの制限設定（推奨）</strong></p>
+        <ul>
+            <li>APIキーの制限を設定するために「APIキーを制限」をクリックします。</li>
+            <li>「Generative Language API」のみにアクセスを制限します。</li>
+        </ul>
+    </div>
+    
+    <h2 id="project-setup">プロジェクトのセットアップ</h2>
+    
+    <div class="step">
+        <p><span class="step-number">1</span> <strong>作業ディレクトリの作成</strong></p>
+        <p>Cloud Shellで以下のコマンドを実行します：</p>
+        <pre class="command">mkdir -p ~/ragas_evaluation
+cd ~/ragas_evaluation</pre>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">2</span> <strong>依存関係のインストール</strong></p>
+        <p>以下のコマンドを実行して必要なライブラリをインストールします：</p>
+        <pre class="command">pip install ragas datasets langchain langchain-google-genai google-generativeai pandas numpy matplotlib python-dotenv</pre>
+    </div>
+    
+    <h2 id="file-upload">ファイルのアップロード</h2>
+    
+    <div class="step">
+        <p><span class="step-number">1</span> <strong>ファイルサーバからのファイルダウンロード</strong></p>
+        <p>社内ファイルサーバから必要なファイルをローカルPCにダウンロードします：</p>
+        <ul>
+            <li>ファイルサーバにアクセスします（例：\\fileserver\shared\ragas_evaluation）</li>
+            <li>以下のファイルをダウンロードします：
+                <ul>
+                    <li>evaluate_rag.py</li>
+                    <li>requirements.txt</li>
+                    <li>sample_data.json</li>
+                    <li>.env.example</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">2</span> <strong>Cloud Shellへのファイルアップロード</strong></p>
+        <ul>
+            <li>Cloud Shellの「その他」メニュー（⋮）をクリックします。</li>
+            <li>「アップロード」を選択します。</li>
+            <li>ダウンロードしたファイルを選択してアップロードします。</li>
+            <li>アップロードが完了したことを確認します。</li>
+        </ul>
+        <div class="image-container">
+            <img src="https://cloud.google.com/shell/docs/images/upload-file.png" alt="Cloud Shellへのファイルアップロード">
+            <p class="caption">Cloud Shellへのファイルアップロード</p>
+        </div>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">3</span> <strong>環境変数の設定</strong></p>
+        <p>以下のコマンドを実行して環境変数ファイルを作成します：</p>
+        <pre class="command">cp .env.example .env</pre>
+        
+        <p>Cloud Shellのエディタで.envファイルを開きます：</p>
+        <pre class="command">nano .env</pre>
+        
+        <p>以下のように編集します（先ほど取得したAPIキーを使用）：</p>
+        <pre class="file-content">GOOGLE_API_KEY=your_google_api_key_here</pre>
+        
+        <p>Ctrl+O を押して保存し、Ctrl+X を押して終了します。</p>
+    </div>
+    
+    <h2 id="script-execution">評価スクリプトの実行</h2>
+    
+    <h3>基本的な実行方法</h3>
+    
+    <div class="step">
+        <p><span class="step-number">1</span> <strong>Geminiモデルを使用した評価の実行</strong></p>
+        <p>以下のコマンドを実行して評価を開始します：</p>
+        <pre class="command">python evaluate_rag.py --data sample_data.json --llm gemini</pre>
+        
+        <p>このコマンドは、サンプルデータを使用してRAGシステムの評価を実行します。</p>
+    </div>
+    
+    <h3>カスタムデータを使用する場合</h3>
+    
+    <div class="step">
+        <p><span class="step-number">1</span> <strong>カスタムデータの準備</strong></p>
+        <p>自分のデータを評価する場合は、sample_data.jsonと同じ形式でJSONLファイルを作成します：</p>
+        <pre class="file-content">{
+  "question": "質問文", 
+  "answer": "回答文", 
+  "contexts": ["コンテキスト1", "コンテキスト2", "コンテキスト3"],
+  "reference": "参照テキスト"
+}</pre>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">2</span> <strong>カスタムデータでの評価実行</strong></p>
+        <p>以下のコマンドを実行して評価を開始します：</p>
+        <pre class="command">python evaluate_rag.py --data your_data.jsonl --llm gemini</pre>
+    </div>
+    
+    <h3>その他のオプション</h3>
+    
+    <div class="step">
+        <p><strong>カスタムカラム名を指定する場合：</strong></p>
+        <pre class="command">python evaluate_rag.py --data your_data.csv --question_key "user_query" --answer_key "generated_response" --contexts_key "retrieved_documents" --llm gemini</pre>
+    </div>
+    
+    <div class="step">
+        <p><strong>出力ディレクトリを指定する場合：</strong></p>
+        <pre class="command">python evaluate_rag.py --data sample_data.json --output_dir "my_results" --llm gemini</pre>
+    </div>
+    
+    <h2 id="results">結果の確認</h2>
+    
+    <div class="step">
+        <p><span class="step-number">1</span> <strong>結果ファイルの確認</strong></p>
+        <p>評価が完了すると、結果は「results」ディレクトリ（または指定した出力ディレクトリ）に保存されます。</p>
+        <ul>
+            <li><code>evaluation_results.csv</code>: 各サンプルの評価スコア</li>
+            <li><code>evaluation_results.png</code>: 評価指標の平均スコアを示す棒グラフ</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">2</span> <strong>結果ファイルのダウンロード</strong></p>
+        <ul>
+            <li>Cloud Shellの「その他」メニュー（⋮）をクリックします。</li>
+            <li>「ダウンロード」を選択します。</li>
+            <li>ダウンロードしたいファイルのパスを入力します（例：<code>~/ragas_evaluation/results/evaluation_results.csv</code>）。</li>
+            <li>「ダウンロード」ボタンをクリックします。</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <p><span class="step-number">3</span> <strong>ファイルサーバへの結果アップロード</strong></p>
+        <ul>
+            <li>ダウンロードした結果ファイルを社内ファイルサーバの指定フォルダにアップロードします。</li>
+            <li>例：\\fileserver\shared\ragas_evaluation\results\[日付]</li>
+        </ul>
+    </div>
+    
+    <h2 id="troubleshooting">トラブルシューティング</h2>
+    
+    <div class="error">
+        <h3>APIキーのエラー</h3>
+        <p><strong>エラーメッセージ:</strong> <code>GOOGLE_API_KEYが設定されていません</code></p>
+        <p><strong>解決策:</strong> <code>.env</code>ファイルにAPIキーが正しく設定されているか確認してください。</p>
+    </div>
+    
+    <div class="error">
+        <h3>ライブラリのインストールエラー</h3>
+        <p><strong>エラーメッセージ:</strong> <code>ModuleNotFoundError: No module named 'ragas'</code></p>
+        <p><strong>解決策:</strong> 依存関係のインストールコマンドを再実行してください。</p>
+    </div>
+    
+    <div class="error">
+        <h3>データ形式のエラー</h3>
+        <p><strong>エラーメッセージ:</strong> <code>データセットに必要なカラムがありません</code></p>
+        <p><strong>解決策:</strong> データファイルが正しい形式（question, answer, contexts, referenceフィールドを含む）であることを確認してください。</p>
+    </div>
+    
+    <div class="error">
+        <h3>メモリエラー</h3>
+        <p><strong>エラーメッセージ:</strong> <code>MemoryError</code></p>
+        <p><strong>解決策:</strong> データセットのサイズを小さくするか、より大きなメモリを持つマシンタイプに変更してください。</p>
+    </div>
+    
+    <div class="warning">
+        <h3>その他のエラー</h3>
+        <p>問題が解決しない場合は、エラーメッセージをコピーしてGoogle検索するか、プロジェクト管理者に連絡してください。</p>
+    </div>
+    
+    <div class="note">
+        <h3>評価指標について</h3>
+        <p>RAGASは以下の評価指標を提供します：</p>
+        <ul>
+            <li><strong>Faithfulness（忠実性）</strong>: 生成された回答が検索されたコンテキストに忠実かどうか</li>
+            <li><strong>AnswerRelevancy（回答の関連性）</strong>: 生成された回答が質問に関連しているかどうか</li>
+            <li><strong>ContextRelevance（コンテキストの関連性）</strong>: 検索されたコンテキストが質問に関連しているかどうか</li>
+            <li><strong>ContextPrecision（コンテキストの精度）</strong>: 検索されたコンテキストが質問に対して過不足なく適切かどうか</li>
+            <li><strong>Critique（側面批評）</strong>: 回答の様々な側面（明確さ、簡潔さ、有用性など）の評価</li>
+        </ul>
+    </div>
+    
+    <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #dadce0; text-align: center; color: #5f6368;">
+        <p>© 2025 RAGAS評価システム | 最終更新日: 2025年4月10日</p>
+    </footer>
+</body>
+</html>
